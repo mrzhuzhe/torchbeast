@@ -141,11 +141,12 @@ def act(
         gym_env = create_env(flags)
         seed = actor_index ^ int.from_bytes(os.urandom(4), byteorder="little")
         gym_env.seed(seed)
-        env = environment.Environment(gym_env)
+        env = environment.Environment(gym_env)        
         env_output = env.initial()
         agent_state = model.initial_state(batch_size=1)
         agent_output, unused_state = model(env_output, agent_state)
         while True:
+            #env.gym_env.render()
             index = free_queue.get()
             if index is None:
                 break
@@ -167,6 +168,7 @@ def act(
 
                 timings.time("model")
 
+                #print("env_output", env_output)
                 env_output = env.step(agent_output["action"])
 
                 timings.time("step")
@@ -349,6 +351,13 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
     model = Net(env.observation_space.shape, env.action_space.n, flags.use_lstm)
     buffers = create_buffers(flags, env.observation_space.shape, model.num_actions)
 
+    _checkpoint = torch.load(checkpointpath
+    #, map_location="cpu"
+    )
+
+    print("loaded model")
+    model.load_state_dict(_checkpoint["model_state_dict"])
+
     model.share_memory()
 
     # Add initial RNN state.
@@ -383,6 +392,9 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
     learner_model = Net(
         env.observation_space.shape, env.action_space.n, flags.use_lstm
     ).to(device=flags.device)
+
+    print("learner model loaded")
+    learner_model.load_state_dict(_checkpoint["model_state_dict"])
 
     optimizer = torch.optim.RMSprop(
         learner_model.parameters(),
@@ -517,7 +529,8 @@ def test(flags, num_episodes: int = 10):
     env = environment.Environment(gym_env)
     model = Net(gym_env.observation_space.shape, gym_env.action_space.n, flags.use_lstm)
     model.eval()
-    checkpoint = torch.load(checkpointpath, map_location="cpu")
+    checkpoint = torch.load(checkpointpath)
+    #, map_location="cpu")
     model.load_state_dict(checkpoint["model_state_dict"])
 
     observation = env.initial()
@@ -528,6 +541,7 @@ def test(flags, num_episodes: int = 10):
             env.gym_env.render()
         agent_outputs = model(observation)
         policy_outputs, _ = agent_outputs
+        #print(policy_outputs["action"])
         observation = env.step(policy_outputs["action"])
         if observation["done"].item():
             returns.append(observation["episode_return"].item())
