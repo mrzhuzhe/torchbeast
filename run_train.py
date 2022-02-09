@@ -37,6 +37,7 @@ class conf:
         self.momentum = 0
         self.epsilon = 0.01
         self.grad_norm_clipping = 40.0
+        #self.total_steps = 1e7
         self.total_steps = 1e7
     """
      --num_actors 45 \

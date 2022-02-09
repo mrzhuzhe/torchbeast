@@ -535,14 +535,20 @@ def test(flags, num_episodes: int = 10):
 
     observation = env.initial()
     returns = []
-
+    _max_ep_limit = 5000
     while len(returns) < num_episodes:
         if flags.mode == "test_render":
             env.gym_env.render()
         agent_outputs = model(observation)
         policy_outputs, _ = agent_outputs
         #print(policy_outputs["action"])
-        observation = env.step(policy_outputs["action"])
+        if observation["episode_step"].item() > _max_ep_limit:
+            # TODO dead loop reset seems not
+            observation = env.step(torch.tensor([1]))
+            #env.gym_env.reset()
+            pass
+        else:
+            observation = env.step(policy_outputs["action"])
         if observation["done"].item():
             returns.append(observation["episode_return"].item())
             logging.info(
@@ -550,6 +556,8 @@ def test(flags, num_episodes: int = 10):
                 observation["episode_step"].item(),
                 observation["episode_return"].item(),
             )
+
+
     env.close()
     logging.info(
         "Average returns over %i steps: %.1f", num_episodes, sum(returns) / len(returns)
