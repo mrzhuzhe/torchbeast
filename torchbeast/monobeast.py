@@ -22,6 +22,8 @@ import timeit
 import traceback
 import typing
 
+from zmq import device
+
 os.environ["OMP_NUM_THREADS"] = "1"  # Necessary for multithreading.
 
 import torch
@@ -141,7 +143,8 @@ def act(
         gym_env = create_env(flags)
         seed = actor_index ^ int.from_bytes(os.urandom(4), byteorder="little")
         gym_env.seed(seed)
-        env = environment.Environment(gym_env)        
+        # 20220311 to device
+        env = environment.Environment(gym_env, device=flags.device)        
         env_output = env.initial()
         agent_state = model.initial_state(batch_size=1)
         agent_output, unused_state = model(env_output, agent_state)
@@ -168,7 +171,6 @@ def act(
 
                 timings.time("model")
 
-                #print("env_output", env_output)
                 env_output = env.step(agent_output["action"])
 
                 timings.time("step")
@@ -237,6 +239,8 @@ def learn(
 ):
     """Performs a learning (optimization) step."""
     with lock:
+        #for key in batch.keys():
+        #    print(key, batch[key].device)
         learner_outputs, unused_state = model(batch, initial_agent_state)
 
         # Take final value function slice for bootstrapping.
@@ -245,6 +249,9 @@ def learn(
         # Move from obs[t] -> action[t] to action[t] -> obs[t].
         batch = {key: tensor[1:] for key, tensor in batch.items()}
         learner_outputs = {key: tensor[:-1] for key, tensor in learner_outputs.items()}
+        
+        #for key in learner_outputs.keys():
+        #    print(key, learner_outputs[key].device)
 
         rewards = batch["reward"]
         if flags.reward_clipping == "abs_one":
@@ -314,7 +321,9 @@ def create_buffers(flags, obs_shape, num_actions) -> Buffers:
     buffers: Buffers = {key: [] for key in specs}
     for _ in range(flags.num_buffers):
         for key in buffers:
-            buffers[key].append(torch.empty(**specs[key]).share_memory_())
+            #buffers[key].append(torch.empty(**specs[key]).share_memory_())
+            # 2022/3/10 to device
+            buffers[key].append(torch.empty(**specs[key]).to(device=flags.device).share_memory_())
     return buffers
 
 
@@ -347,8 +356,10 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
         flags.device = torch.device("cpu")
 
     env = create_env(flags)
-
-    model = Net(env.observation_space.shape, env.action_space.n, flags.use_lstm)
+    
+    # 2022/3/10 to device
+    model = Net(env.observation_space.shape, env.action_space.n, flags.use_lstm).to(device=flags.device)
+    #model = Net(env.observation_space.shape, env.action_space.n, flags.use_lstm)
     buffers = create_buffers(flags, env.observation_space.shape, model.num_actions)
 
     model.share_memory()
@@ -362,7 +373,8 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
         initial_agent_state_buffers.append(state)
 
     actor_processes = []
-    ctx = mp.get_context("fork")
+    #ctx = mp.get_context("fork")
+    ctx = mp.get_context("spawn")
     free_queue = ctx.SimpleQueue()
     full_queue = ctx.SimpleQueue()
 
@@ -654,7 +666,7 @@ def create_env(flags):
             clip_rewards=False,
             frame_stack=True,
             scale=False,
-        )
+        ), flags.device
     )
 
 

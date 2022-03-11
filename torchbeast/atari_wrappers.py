@@ -29,6 +29,7 @@ from collections import deque
 import gym
 from gym import spaces
 import cv2
+import torch
 cv2.ocl.setUseOpenCL(False)
 
 
@@ -318,7 +319,7 @@ class ImageToPyTorch(gym.ObservationWrapper):
     Image shape to channels x weight x height
     """
 
-    def __init__(self, env):
+    def __init__(self, env, device):
         super(ImageToPyTorch, self).__init__(env)
         old_shape = self.observation_space.shape
         self.observation_space = gym.spaces.Box(
@@ -327,10 +328,12 @@ class ImageToPyTorch(gym.ObservationWrapper):
             shape=(old_shape[-1], old_shape[0], old_shape[1]),
             dtype=np.uint8,
         )
+        self.device = device
 
     def observation(self, observation):
+        #return torch.from_numpy(np.transpose(observation, axes=(2, 0, 1))).to(self.device, non_blocking=True)
         return np.transpose(observation, axes=(2, 0, 1))
 
 
-def wrap_pytorch(env):
-    return ImageToPyTorch(env)
+def wrap_pytorch(env, device):
+    return ImageToPyTorch(env, device)

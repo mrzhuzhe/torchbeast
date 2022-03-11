@@ -12,8 +12,8 @@ class conf:
 
         self.disable_checkpoint = None
 
-        self.num_actors = 45
-        #self.num_actors = 4
+        #self.num_actors = 45
+        self.num_actors = 1
         self.batch_size = 8
         #self.batch_size = 4
 
