@@ -351,12 +351,12 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
     model = Net(env.observation_space.shape, env.action_space.n, flags.use_lstm)
     buffers = create_buffers(flags, env.observation_space.shape, model.num_actions)
 
-    _checkpoint = torch.load(checkpointpath
+    #_checkpoint = torch.load(checkpointpath
     #, map_location="cpu"
-    )
+    #)
 
-    print("loaded model")
-    model.load_state_dict(_checkpoint["model_state_dict"])
+    #print("loaded model")
+    #model.load_state_dict(_checkpoint["model_state_dict"])
 
     model.share_memory()
 
@@ -393,8 +393,8 @@ def train(flags):  # pylint: disable=too-many-branches, too-many-statements
         env.observation_space.shape, env.action_space.n, flags.use_lstm
     ).to(device=flags.device)
 
-    print("learner model loaded")
-    learner_model.load_state_dict(_checkpoint["model_state_dict"])
+    #print("learner model loaded")
+    #learner_model.load_state_dict(_checkpoint["model_state_dict"])
 
     optimizer = torch.optim.RMSprop(
         learner_model.parameters(),
