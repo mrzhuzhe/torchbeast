@@ -12,15 +12,15 @@ class conf:
 
         self.disable_checkpoint = None
 
+        self.num_actors = 4
         #self.num_actors = 45
-        self.num_actors = 1
-        self.batch_size = 8
-        #self.batch_size = 4
+        #self.batch_size = 8
+        self.batch_size = 4
 
-        #self.num_buffers = max(2 * self.num_actors, self.batch_size)
-        self.num_buffers = 60
-        #self.num_learner_threads = 2
-        self.num_learner_threads = 4
+        self.num_buffers = max(2 * self.num_actors, self.batch_size)
+        #self.num_buffers = 60
+        self.num_learner_threads = 2
+        #self.num_learner_threads = 4
 
         self.unroll_length = 80
         self.disable_cuda = None
@@ -38,7 +38,7 @@ class conf:
         self.epsilon = 0.01
         self.grad_norm_clipping = 40.0
         #self.total_steps = 1e7
-        self.total_steps = 1e7
+        self.total_steps = 1e6
     """
      --num_actors 45 \
      --total_steps 30000000 \

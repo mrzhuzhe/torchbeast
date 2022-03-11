@@ -139,3 +139,6 @@ dmypy.json
 
 # VSCode
 .vscode
+
+.flake8
+.clang-format
